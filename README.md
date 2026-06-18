@@ -1,9 +1,7 @@
 # XeniumClean
 
 <!-- badges: start -->
-[![R-CMD-check](https://github.com/rzemek/XeniumClean/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/rzemek/XeniumClean/actions/workflows/R-CMD-check.yaml)
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 <!-- badges: end -->
 
 Spatial neighbour-aware transcript cleanup for imaging-based spatial transcriptomics data (Xenium, MERSCOPE, CosMx).
@@ -113,7 +111,7 @@ gene_sets <- BuildReferenceGeneSets(
   not.expressed.threshold = 0.05
 )
 
-# 2. (Optional) Collapse fine spatial labels to broad reference granularity
+# 2. (Optional) Collapse fine spatial labels to match broad reference granularity
 xenium_obj$xclean_label <- CollapseLabels(
   labels  = xenium_obj$clusters,
   mapping = c(
@@ -194,7 +192,7 @@ XeniumClean(xenium_obj, ..., coords.source = "matrix", coords = my_coord_matrix)
 |---|---|---|
 | `expressed.threshold` | 0.10 | Lower to be more aggressive (more genes considered "expressed"); raise for stricter cell-type-specificity |
 | `not.expressed.threshold` | 0.05 | Lower to be more conservative (fewer removals); raise to remove more |
-| `radius` | 50 µm | Match your imaging resolution. CosMx may use larger; lower for finer-grained tissue |
+| `radius` | 50 µm | Distance between centroids of neighbouring cells. Match your imaging resolution |
 | `skip.pairs` | `NULL` | Add closely-related lineages (T/NK, B/Plasma, Mono/Mac) to prevent over-cleaning |
 | `remove.ubiquitous` | `TRUE` | Set `FALSE` to keep housekeeping genes in cell-type marker sets |
 | `block.size` | 500 | Reduce for memory-constrained workers, increase for fewer overhead calls |
@@ -212,5 +210,4 @@ If you use XeniumClean in your research, please cite:
 > spatial transcriptomics. https://github.com/rzemek/XeniumClean
 
 ## License
-
-MIT
+OPEN
