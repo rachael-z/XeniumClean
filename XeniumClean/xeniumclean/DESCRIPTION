@@ -1,0 +1,42 @@
+Package: XeniumClean
+Title: Spatial Neighbour-Aware Transcript Cleanup for Imaging-Based Spatial Transcriptomics
+Version: 0.1.0
+Authors@R: c(
+    person("Rachael", "Zemek", , "rachael.zemek@auckland.ac.nz",
+           role = c("aut", "cre"))
+    )
+Description: Removes biologically implausible transcripts from imaging-based spatial
+    transcriptomics data (Xenium, MERSCOPE, CosMx) by combining a single-cell RNA-seq
+    reference with spatial neighbourhood information. For every cell, the package
+    identifies which neighbouring cells belong to other cell types and erases only those
+    transcripts that the reference says cannot plausibly originate from the cell's own
+    type. This respects physical adjacency and never removes transcripts a cell could
+    genuinely express.
+License: MIT + file LICENSE
+URL: https://github.com/rzemek/XeniumClean
+BugReports: https://github.com/rzemek/XeniumClean/issues
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Depends:
+    R (>= 4.1.0)
+Imports:
+    Seurat (>= 5.0.0),
+    SeuratObject (>= 5.0.0),
+    Matrix,
+    dbscan,
+    methods,
+    stats,
+    utils
+Suggests:
+    future,
+    future.apply,
+    progressr,
+    ggplot2,
+    patchwork,
+    pheatmap,
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown
+Config/testthat/edition: 3
+VignetteBuilder: knitr

@@ -1,0 +1,475 @@
+---
+title: "Getting started with XeniumClean"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting started with XeniumClean}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment  = "#>",
+  eval     = FALSE
+)
+```
+
+This vignette walks through a complete XeniumClean workflow. The example uses
+Xenium nomenclature throughout but the package works equally well with
+MERSCOPE, CosMx, or any other imaging-based spatial dataset stored in a Seurat
+object.
+
+## Background
+
+Imaging-based spatial transcriptomics platforms detect single transcripts at
+high spatial resolution, but cell segmentation is imperfect. Transcripts can
+"leak" into neighbouring cells, especially in densely packed tissue. This
+contamination produces cells that appear to express genes characteristic of
+their neighbours rather than their own type.
+
+XeniumClean uses a single-cell RNA-seq reference to define, per cell type,
+which genes are plausibly expressed and which are not. For every spatial cell,
+it then asks: do any of my neighbours belong to a cell type that genuinely
+expresses gene X, while my own cell type does not? If so, gene X in my count
+vector is contamination and is set to zero.
+
+```
++--- Cell A (T cell) ----------+
+|                              |
+|  Genuine T cell genes: kept  |
+|  Macrophage neighbour genes  |
+|  that T cells do not express:|
+|     erased                   |
++------------------------------+
+```
+
+Cleanup is conservative. Genes that A could plausibly express are never
+removed, even if A's neighbours also express them.
+
+# Critical considerations — read before running
+
+## 1. Cell types must be pre-defined in both datasets
+
+XeniumClean does not perform clustering or annotation. Both the reference and
+your spatial object need a populated cell type column before you start. Label
+names must match between reference and spatial — use `CollapseLabels()` to
+align them if needed.
+
+## 2. Use BROAD cell types, not fine subsets
+
+Define cell types at the **major lineage level**:
+
+✅ Good cell type categories:
+
+```
+T_cells, B_cells, NK_cells, Plasma_cells, Macrophage, Monocytes, DC,
+Mast_cells, Neutrophils, Cancer, Fibroblasts, Endothelial, PVL
+```
+
+❌ Avoid splitting too finely for cleanup:
+
+```
+CD4_T_cells, CD8_T_cells, T_reg_cells, Cycling_T_cells,
+Memory_B_cells, Naive_B_cells,
+M1_Macrophage, M2_Macrophage, TREM2_Macrophage,
+cDC1, cDC2, pDC,
+Cancer_Basal, Cancer_LumA, Cancer_LumB, ...
+```
+
+Why broad:
+
+- Closely related subsets share most of their expression program. If you split
+  T cells into CD4 vs CD8, real T cell genes that happen to be slightly higher
+  in one will be in the other's `NotExpressedGenes` and get erased from real
+  cells.
+- The reference must have enough cells per group to estimate gene fractions
+  stably (≥30 per group, ideally ≥100). Fine subsets often fall below this.
+- Differences between fine subsets are exactly what you want to discover
+  *after* cleanup, in cleaner expression space.
+
+Even consider **grouping NK cells with T cells** (as "lymphoid") if your panel
+can't reliably tell them apart. The reverse — splitting T cells into CD4/CD8
+for cleanup — is almost always a mistake.
+
+## 3. Subclustering after cleanup reveals real biology
+
+This is a significant secondary benefit of XeniumClean.
+
+In raw Xenium data, fine subclustering of e.g. T cells often picks up
+**neighbourhood patterns** rather than true T cell biology. T cells near
+macrophages contain bled-through macrophage transcripts. T cells near B cells
+contain bled-through B cell transcripts. When you cluster these T cells at
+high resolution, the clusters reflect **where the T cells live in tissue**,
+not what state they're in.
+
+After XeniumClean:
+
+- Macrophage genes are removed from T cells next to macrophages
+- B cell genes are removed from T cells next to B cells
+- What remains is the T cell's genuine expression
+
+When you now subcluster the cleaned T cells, the clusters reflect **real T
+cell biology**: CD4 vs CD8, naive vs effector vs memory, cytotoxic vs
+exhausted, etc.
+
+**Recommended workflow:**
+
+```
+1. Cluster spatial data broadly → assign broad cell types
+2. Run XeniumClean using broad cell types
+3. THEN subcluster the cleaned assay to discover true subsets
+```
+
+## 4. ⚠️ The reference choice is the single most important decision
+
+XeniumClean is only as good as its reference. A mismatched reference can:
+
+- Mark genes as "not expressed" that ARE expressed in your tissue → those
+  genes get erased = **real biology destroyed**
+- Mark genes as "expressed" when they shouldn't be → contaminating
+  transcripts kept = no cleanup happens
+
+### Reference quality, in order of safety:
+
+| Tier | Reference type | Notes |
+|------|----------------|-------|
+| ✅✅ Best | scRNA-seq from the same experiment | Matched tissue, samples, sample prep, disease state |
+| ✅ Good | Published atlas of the same tissue + disease | e.g. Wu 2021 for breast cancer, Pelka 2021 for CRC |
+| ⚠️ Risky | Published atlas of healthy tissue when you have disease | Misses disease-specific expression programs |
+| ⚠️ Risky | Published atlas of a related but different tissue | e.g. PBMC reference for tumor tissue T cells |
+| ❌ Don't | Manually curated gene lists from literature | Almost impossible to get both expressed AND not-expressed correct |
+
+### Why user-defined references are risky
+
+You can manually build a `gene.sets` object:
+
+```r
+gene_sets <- list(
+  ExpressedGenes = list(
+    T_cells   = c("CD3D","CD3E","CD2","IL7R","..."),
+    B_cells   = c("MS4A1","CD79A","CD19","...")
+  ),
+  NotExpressedGenes = list(
+    T_cells   = c("MS4A1","CD79A","CD68","CD163","..."),
+    B_cells   = c("CD3D","CD3E","CD68","CD163","...")
+  )
+)
+class(gene_sets) <- "XeniumCleanGeneSets"
+```
+
+But to get this right for a 380-gene panel × 10 cell types, you'd need 3800
+correct gene-level decisions about whether each gene is expressed (≥10%) or
+not-expressed (≤5%) in each cell type. Almost no one can do this accurately
+from literature alone, because:
+
+- Marker genes from literature are usually "expressed at high level in", not
+  "expressed in ≥10% of cells"
+- The "not expressed" list is what protects real biology — getting one gene
+  wrong here means erasing real expression
+- Cell-type-specific expression varies enormously by tissue, disease state,
+  and species
+
+If you must build a reference manually, validate exhaustively: every gene in
+your panel, every cell type, against published expression studies.
+
+## 5. Multi-sample objects must be split into a list
+
+XeniumClean operates per-section because spatial neighbours are
+within-section. If you've merged samples into one Seurat object, split first.
+
+**Do not use `subset()`** for v5 objects with split layers — it can be slow,
+memory-intensive, and produce inconsistent results.
+
+```{r}
+# Recommended for most users
+xenium_list <- SplitObject(xenium_merged, split.by = "sample")
+
+# Alternative: subset_opt (community function, optimised for v5 split-layer)
+# See https://github.com/satijalab/seurat/issues/2724 for the function source
+xenium_list <- lapply(unique(xenium_merged$sample), function(s) {
+  subset_opt(xenium_merged, subset = sample == s)
+})
+names(xenium_list) <- unique(xenium_merged$sample)
+```
+
+After splitting, each element should:
+
+- Be a single Seurat object for one section
+- Have its own FOV (or spatial reduction, or metadata coordinates)
+- Carry the cell type column you'll use for cleanup
+
+# Workflow overview
+
+1. Load a single-cell reference (matched to your tissue/disease as closely as
+   possible)
+2. Load your spatial Seurat object(s); split if merged
+3. Build per-cell-type gene sets at BROAD granularity
+4. Align label nomenclature between reference and spatial
+5. Run cleanup
+6. QC
+7. Re-cluster on the cleaned assay to discover true subsets
+
+```{r}
+library(XeniumClean)
+library(Seurat)
+```
+
+# Step 1: Load the single-cell reference
+
+```{r}
+sc_reference <- readRDS("path/to/single_cell_reference.rds")
+sc_reference <- NormalizeData(sc_reference, verbose = FALSE)
+
+# Confirm the label column exists and uses BROAD categories
+table(sc_reference$celltype_broad)
+```
+
+If the reference has fine subtypes, collapse them first:
+
+```{r}
+sc_reference$xclean_label <- CollapseLabels(
+  labels  = sc_reference$celltype_minor,
+  mapping = c(
+    "B cells Memory" = "B_cells",
+    "B cells Naive"  = "B_cells",
+    "T cells CD4+"   = "T_cells",
+    "T cells CD8+"   = "T_cells",
+    "Cycling T-cells" = "T_cells",
+    "NK cells"        = "T_cells",       # consider grouping with T cells
+    "Macrophage"      = "Macrophage",
+    "Monocyte"        = "Monocytes",
+    "DCs"             = "DC",
+    "CAFs myCAF-like" = "Fibroblasts",
+    "CAFs MSC iCAF-like" = "Fibroblasts",
+    "Cancer LumA SC"  = "Cancer",
+    "Cancer LumB SC"  = "Cancer",
+    "Cancer Basal SC" = "Cancer",
+    "Mature Luminal"  = "Cancer",
+    "Myoepithelial"   = "Cancer"
+  )
+)
+```
+
+# Step 2: Load and prepare your spatial Seurat object(s)
+
+If you have a single section:
+
+```{r}
+xenium_obj <- readRDS("path/to/xenium_seurat.rds")
+table(xenium_obj$cell_type)
+```
+
+If you have multiple sections in a merged object, split it:
+
+```{r}
+xenium_list <- SplitObject(xenium_merged, split.by = "sample")
+```
+
+# Step 3: Build per-cell-type gene sets
+
+```{r}
+# Use whichever object you have - either single or one of the list
+shared_genes <- intersect(rownames(sc_reference), rownames(xenium_obj))
+length(shared_genes)
+
+gene_sets <- BuildReferenceGeneSets(
+  reference                = sc_reference,
+  group.by                 = "xclean_label",
+  genes.use                = shared_genes,
+  expressed.threshold      = 0.10,
+  not.expressed.threshold  = 0.05,
+  remove.ubiquitous        = TRUE
+)
+
+print(gene_sets)
+```
+
+**Sanity-check the gene sets** before moving on. Known cell-type-specific
+markers should land in the right buckets:
+
+```{r}
+"CD3D"  %in% gene_sets$ExpressedGenes$T_cells       # TRUE
+"CD3D"  %in% gene_sets$NotExpressedGenes$Cancer     # TRUE
+"MS4A1" %in% gene_sets$ExpressedGenes$B_cells       # TRUE
+"MS4A1" %in% gene_sets$NotExpressedGenes$T_cells    # TRUE
+"EPCAM" %in% gene_sets$ExpressedGenes$Cancer        # TRUE
+"CD163" %in% gene_sets$ExpressedGenes$Macrophage    # TRUE
+```
+
+If any of these returns FALSE, your reference or label mapping has an issue.
+Fix before cleaning.
+
+# Step 4: Align spatial labels to reference granularity
+
+```{r}
+xenium_list <- lapply(xenium_list, function(x) {
+  x$xclean_label <- CollapseLabels(
+    labels  = x$clusters,
+    mapping = c(
+      # T cells (all merged)
+      CD4_T_cells = "T_cells",
+      CD8_T_cells = "T_cells",
+      T_reg_cells = "T_cells",
+      NK_cells    = "T_cells",         # consider grouping
+      # DCs
+      cDC1_LAMP3  = "DC",
+      cDC1_S100B  = "DC",
+      cDC2        = "DC",
+      pDC         = "DC",
+      # Cancer
+      Cancer_LumA   = "Cancer",
+      Cancer_Basal  = "Cancer",
+      Cancer_CXCL14 = "Cancer",       # myoepithelial-like
+      Epithelial_Cancer = "Cancer"
+    )
+  )
+  x
+})
+```
+
+Labels not in the mapping (e.g. `Neutrophils`, `Mast_cells`, `Adipocytes`)
+pass through. Cell types absent from the reference are silently skipped during
+cleanup, preserving their counts. This is the safe default.
+
+# Step 5: Run cleanup
+
+```{r}
+xenium_list <- XeniumClean(
+  object    = xenium_list,
+  gene.sets = gene_sets,
+  group.by  = "xclean_label",
+  radius    = 50,
+  parallel  = TRUE,
+  workers   = 6
+)
+```
+
+## Coordinate format options
+
+By default XeniumClean looks for coordinates in image FOVs (Xenium standard),
+then a `spatial` reduction, then metadata. To force one or supply your own:
+
+```{r}
+# From a dimensional reduction
+XeniumClean(xenium_obj, ..., coords.source = "reduction",
+            reduction.name = "spatial")
+
+# From metadata columns named cx, cy
+XeniumClean(xenium_obj, ..., coords.source = "metadata",
+            coord.cols = c("cx", "cy"))
+
+# From a matrix you computed externally
+XeniumClean(xenium_obj, ..., coords.source = "matrix", coords = my_xy_matrix)
+```
+
+## Skip-pairs for lineage continuum (advanced)
+
+If you kept finer cell types than recommended and are seeing over-cleaning
+between closely-related lineages, you can tell XeniumClean to skip those
+pairs:
+
+```{r}
+xenium_list <- XeniumClean(
+  object     = xenium_list,
+  gene.sets  = gene_sets,
+  group.by   = "xclean_label",
+  skip.pairs = list(
+    c("T_cells",   "NK_cells"),
+    c("B_cells",   "Plasma_cells"),
+    c("Monocytes", "Macrophage")
+  )
+)
+```
+
+The cleaner solution is usually to merge these into broader categories
+upstream (see Step 4) — skip.pairs is for cases where you really do want
+both subtypes labelled separately.
+
+# Step 6: QC
+
+```{r}
+CleanupSummary(xenium_list, group.by = "xclean_label")
+```
+
+Expect roughly 2 to 8 % of total transcripts removed per sample for a 300 to
+500 gene panel. Much higher than 15 % suggests over-cleaning (likely a label
+alignment or granularity issue); much lower than 1 % suggests the gene sets
+are too permissive.
+
+```{r}
+PlotRemovedTranscripts(xenium_list, group.by = "xclean_label")
+```
+
+# Step 7: Subcluster on the cleaned assay (the payoff)
+
+This is where XeniumClean really pays off. Cluster the cleaned data and you
+should see subsets emerging based on true biology rather than neighbourhood
+contamination.
+
+```{r}
+# Re-merge if you want a single object, or work on the per-sample list
+xenium_obj <- merge(xenium_list[[1]], xenium_list[-1])
+DefaultAssay(xenium_obj) <- "XeniumClean"
+
+xenium_obj <- NormalizeData(xenium_obj)
+xenium_obj <- ScaleData(xenium_obj, features = rownames(xenium_obj))
+xenium_obj <- RunPCA(xenium_obj, features = rownames(xenium_obj),
+                      reduction.name = "pca_clean")
+xenium_obj <- FindNeighbors(xenium_obj, reduction = "pca_clean", dims = 1:30,
+                             graph.name = c("clean_nn", "clean_snn"))
+xenium_obj <- FindClusters(xenium_obj, graph.name = "clean_snn",
+                            resolution = 0.8,
+                            cluster.name = "clean_clusters")
+xenium_obj <- RunUMAP(xenium_obj, reduction = "pca_clean", dims = 1:30,
+                       reduction.name = "umap_clean")
+
+DimPlot(xenium_obj, reduction = "umap_clean", group.by = "clean_clusters")
+```
+
+Now look at marker genes for the new subclusters. Expect to see real subsets
+that you couldn't separate before:
+
+```{r}
+# T cell subsets in the cleaned data
+Idents(xenium_obj) <- "clean_clusters"
+DotPlot(xenium_obj,
+        features = c("CD4","CD8A","CD8B","FOXP3","IL2RA","TCF7","IL7R",
+                     "CCR7","GZMB","GZMK","PRF1","CXCR3","CXCR5"),
+        idents = subset(xenium_obj, subset = xclean_label == "T_cells") |>
+                   Idents() |> unique()) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+The original `Xenium` (or whatever your source assay was called) is preserved
+alongside `XeniumClean`. You can switch back at any time to compare cleaned
+vs uncleaned results, but for downstream biological analysis, the cleaned
+assay is what you want.
+
+# Optional: per-cell QC scoring
+
+`ScoreCellTypes()` and `FlagMismatches()` provide diagnostics for identifying
+cells that may be mislabeled (their expression matches a different reference
+cell type) or heavily contaminated (their expression matches their assigned
+type, but their neighbours don't):
+
+```{r}
+xenium_obj <- ScoreCellTypes(xenium_obj, gene_sets, assay = "Xenium")
+xenium_obj <- FlagMismatches(xenium_obj, group.by = "xclean_label")
+
+table(xenium_obj$xeniumclean_diagnosis, xenium_obj$xclean_label)
+```
+
+These flags are diagnostic, not corrective. XeniumClean does not act on them
+automatically.
+
+# Summary
+
+- **Cell types must be pre-defined** in both reference and spatial data.
+- **Use broad cell types**, not fine subsets, for the cleanup step.
+- **Subclustering after cleanup** reveals true biology, not contamination
+  patterns.
+- **The reference must match your tissue/disease**. The safest reference is
+  matched scRNA-seq from your own experiment.
+- **Multi-sample objects must be split into a list** before cleanup. Use
+  `SplitObject()` rather than `subset()` for v5 objects.

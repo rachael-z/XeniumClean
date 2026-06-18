@@ -1,0 +1,36 @@
+url: https://rzemek.github.io/XeniumClean/
+
+template:
+  bootstrap: 5
+  bootswatch: cosmo
+
+home:
+  title: XeniumClean
+  description: Spatial neighbour-aware transcript cleanup for imaging-based spatial transcriptomics
+
+reference:
+  - title: "Core cleanup"
+    desc: "Main functions for running the cleanup workflow"
+    contents:
+      - BuildReferenceGeneSets
+      - XeniumClean
+      - CollapseLabels
+      - ValidateSetup
+
+  - title: "Coordinates and neighbours"
+    contents:
+      - GetSpatialCoords
+      - ComputeSpatialNeighbors
+
+  - title: "QC and diagnostics"
+    contents:
+      - ScoreCellTypes
+      - FlagMismatches
+      - CleanupSummary
+      - PlotRemovedTranscripts
+
+articles:
+  - title: "Get started"
+    navbar: ~
+    contents:
+      - xeniumclean
