@@ -237,7 +237,7 @@ sc_reference$xclean_label <- CollapseLabels(
     "T cells CD8+"   = "T_cells",
     "Cycling T-cells" = "T_cells",
     "NK cells"        = "T_cells",       # consider grouping with T cells
-    "Macrophage"      = "Macrophage",
+    "Macrophage"      = "Macrophage",    # include mapping if name is the same
     "Monocyte"        = "Monocytes",
     "DCs"             = "DC",
     "CAFs myCAF-like" = "Fibroblasts",
@@ -245,8 +245,8 @@ sc_reference$xclean_label <- CollapseLabels(
     "Cancer LumA SC"  = "Cancer",
     "Cancer LumB SC"  = "Cancer",
     "Cancer Basal SC" = "Cancer",
-    "Mature Luminal"  = "Cancer",
-    "Myoepithelial"   = "Cancer"
+    "Mature Luminal"  = "Cancer"
+
   )
 )
 ```
@@ -320,8 +320,10 @@ xenium_list <- lapply(xenium_list, function(x) {
       # Cancer
       Cancer_LumA   = "Cancer",
       Cancer_Basal  = "Cancer",
-      Cancer_CXCL14 = "Cancer",       # myoepithelial-like
-      Epithelial_Cancer = "Cancer"
+      Cancer_CXCL14 = "Cancer",       
+      Epithelial_Cancer = "Cancer",
+      # B cells
+      B_cells   = "B_cells"            # include if name is the same
     )
   )
   x
