@@ -8,6 +8,8 @@ Spatial neighbour-aware transcript cleanup for imaging-based spatial transcripto
 
 XeniumClean removes biologically implausible transcripts by combining a single-cell RNA-seq reference with spatial neighbourhood information. For every cell, it identifies which neighbouring cells belong to other cell types and erases only those transcripts that the reference says cannot plausibly originate from the cell's own type.
 
+<img width="762" height="897" alt="image" src="https://github.com/user-attachments/assets/f172688f-f2e8-4b95-8cad-62a804c2c7fa" />
+
 ## How it works
 
 For each cell type, two gene sets are built from a single-cell reference:
@@ -124,8 +126,14 @@ xenium_obj$xclean_label <- CollapseLabels(
   )
 )
 
-# 3. Validate setup before running (recommended)
-ValidateSetup(xenium_obj, gene_sets, group.by = "xclean_label")
+# 3. (Optional) Validate setup before running (recommended)
+# see validate.R for default list of "sanity genes" and cell types (sanity.markers = NULL)
+# Add your own list of celltype-gene pairs eg:
+# sanity.markers <- list(
+#      T_cells      = c("CD3D","CD3E","CD2"),
+#      B_cells      = c("MS4A1","CD79A","CD19"), etc...)
+
+ValidateSetup(xenium_obj, gene_sets, group.by = "xclean_label")  
 
 # 4. Run cleanup
 xenium_obj <- XeniumClean(
@@ -151,6 +159,7 @@ xenium_obj <- RunUMAP(xenium_obj, dims = 1:30)
 xenium_obj <- FindNeighbors(xenium_obj, dims = 1:30)
 xenium_obj <- FindClusters(xenium_obj, resolution = 0.8)
 ```
+<img width="1368" height="597" alt="image" src="https://github.com/user-attachments/assets/254e7717-14fc-404f-9e4e-1a7a474a94f8" />
 
 ## Working with multiple sections
 
