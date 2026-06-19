@@ -8,7 +8,7 @@ Spatial neighbour-aware transcript cleanup for imaging-based spatial transcripto
 
 XeniumClean removes biologically implausible transcripts by combining a single-cell RNA-seq reference with spatial neighbourhood information. For every cell, it identifies which neighbouring cells belong to other cell types and erases only those transcripts that the reference says cannot plausibly originate from the cell's own type.
 
-<img width="762" height="897" alt="image" src="https://github.com/user-attachments/assets/f172688f-f2e8-4b95-8cad-62a804c2c7fa" />
+<img width="381" height="449" alt="image" src="https://github.com/user-attachments/assets/f172688f-f2e8-4b95-8cad-62a804c2c7fa" />
 
 ## How it works
 
@@ -159,7 +159,8 @@ xenium_obj <- RunUMAP(xenium_obj, dims = 1:30)
 xenium_obj <- FindNeighbors(xenium_obj, dims = 1:30)
 xenium_obj <- FindClusters(xenium_obj, resolution = 0.8)
 ```
-<img width="1368" height="597" alt="image" src="https://github.com/user-attachments/assets/254e7717-14fc-404f-9e4e-1a7a474a94f8" />
+
+<img width="1039" height="471" alt="image" src="https://github.com/user-attachments/assets/a0d5ab52-aa8e-46d1-bf09-cf2a58bde2d3" />
 
 ## Working with multiple sections
 
