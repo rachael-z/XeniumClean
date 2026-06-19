@@ -6,7 +6,7 @@
 
 Spatial neighbour-aware transcript cleanup for imaging-based spatial transcriptomics data (Xenium, MERSCOPE, CosMx).
 
-XeniumClean removes biologically implausible transcripts by combining a single-cell RNA-seq reference with spatial neighbourhood information. For every cell, it identifies which neighbouring cells belong to other cell types and erases only those transcripts that the reference says cannot plausibly originate from the cell's own type.
+XeniumClean removes biologically implausible transcripts by combining a single-cell RNA-seq reference with spatial neighbourhood information. For every cell, it identifies which transcripts belong to neighbouring cells and erases only those transcripts that the reference says cannot plausibly originate from the cell's own type.
 
 <img width="381" height="449" alt="image" src="https://github.com/user-attachments/assets/f172688f-f2e8-4b95-8cad-62a804c2c7fa" />
 
