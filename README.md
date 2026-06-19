@@ -16,6 +16,7 @@ For each cell type, two gene sets are built from a single-cell reference:
 
 - **Expressed genes**: genes detected in at least 10% of cells of that type
 - **Not-expressed genes**: genes detected in less than 5% of cells of that type
+  
   (values can be adjusted)
 
 Then, for each cell `x` of type A in spatial data:
