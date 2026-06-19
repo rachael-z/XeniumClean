@@ -161,7 +161,7 @@ xenium_obj <- FindClusters(xenium_obj, resolution = 0.8)
 ```
 ## Examples after clean up:
 ### Subsetting after XeniumClean 
-(run on broad "T_cell" cluster, including CD4, CD8 and NK cells -> no cleaning was done to try separate these subsets!)
+run on broad "T_cell" cluster (including CD4, CD8 and NK cells) to remove contamination from neighbouring macrophages, stroma, B-cells stc. -> no cleaning was done to try separate these subsets!
 <img width="1433" height="542" alt="image" src="https://github.com/user-attachments/assets/f3d936fa-90cd-4db7-932b-b2c44461491e" />
 <img width="1433" height="542" alt="image" src="https://github.com/user-attachments/assets/a5c844ae-2380-4c47-888a-bd6c2466ba9d" />
 
