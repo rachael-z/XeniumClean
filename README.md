@@ -26,7 +26,7 @@ Then, for each cell `x` of type A in spatial data:
 
 The output is a new cleaned assay (`XeniumClean` by default) alongside the original counts.
 
-## ⚠️ Critical warnings — read before running
+## Read before running:
 
 ### 1. Cell types must be pre-defined in both datasets
 
@@ -63,7 +63,7 @@ XeniumClean is only as good as its reference. A mismatched reference can:
 1. ✅ **Best**: single-cell data from the same experiment (e.g. matched scRNA-seq from a subset of your samples)
 2. ✅ **Good**: a published atlas from the same tissue, disease state, and sample preparation (e.g. Wu 2021 breast cancer for breast cancer Xenium)
 3. ⚠️ **Risky**: a public atlas from a different tissue or different disease (e.g. healthy breast for breast cancer; PBMC for tumor)
-4. ❌ **Avoid**: manually curated gene lists from literature alone
+4. ❌ **High Risk**: manually curated gene lists from literature alone
 
 For option 1 or 2, the gene sets will broadly reflect your tissue's biology. For option 3, expect over-cleaning of disease-specific or tissue-specific genes that the reference doesn't capture.
 
@@ -220,4 +220,4 @@ If you use XeniumClean in your research, please cite:
 > spatial transcriptomics. https://github.com/rzemek/XeniumClean
 
 ## License
-OPEN
+GPL-3
