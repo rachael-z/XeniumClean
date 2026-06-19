@@ -63,7 +63,7 @@ XeniumClean is only as good as its reference. A mismatched reference can:
 1. ✅ **Best**: single-cell data from the same experiment (e.g. matched scRNA-seq from a subset of your samples)
 2. ✅ **Good**: a published atlas from the same tissue, disease state, and sample preparation (e.g. Wu 2021 breast cancer for breast cancer Xenium)
 3. ⚠️ **Risky**: a public atlas from a different tissue or different disease (e.g. healthy breast for breast cancer; PBMC for tumor)
-4. ❌ **High Risk**: manually curated gene lists from literature alone -> Use this for sub-clustering only, not downstream analysis (eg. DE)
+4. ❌ **High Risk**: manually curated gene lists from literature alone -> Use this to aid downstream sub-clustering only, not for analysis (eg. DE)
 
 For option 1 or 2, the gene sets will broadly reflect your tissue's biology. For option 3, expect over-cleaning of disease-specific or tissue-specific genes that the reference doesn't capture.
 
