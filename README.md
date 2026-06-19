@@ -4,7 +4,7 @@
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 <!-- badges: end -->
 
-Spatial neighbour-aware transcript cleanup for imaging-based spatial transcriptomics data (Xenium, MERSCOPE, CosMx).
+Spatial neighbour-aware transcript cleanup for imaging-based spatial transcriptomics data (Xenium, MERSCOPE, CosMx, Atera).
 
 XeniumClean removes biologically implausible transcripts by combining a **single-cell RNA-seq reference** with spatial neighbourhood information. For every cell, it identifies which transcripts belong to neighbouring cells and erases only those transcripts that the reference says cannot plausibly originate from the cell's own type.
 
@@ -63,7 +63,7 @@ XeniumClean is only as good as its reference. A mismatched reference can:
 1. ✅ **Best**: single-cell data from the same experiment (e.g. matched scRNA-seq from a subset of your samples)
 2. ✅ **Good**: a published atlas from the same tissue, disease state, and sample preparation (e.g. Wu 2021 breast cancer for breast cancer Xenium)
 3. ⚠️ **Risky**: a public atlas from a different tissue or different disease (e.g. healthy breast for breast cancer; PBMC for tumor)
-4. ❌ **High Risk**: manually curated gene lists from literature alone
+4. ❌ **High Risk**: manually curated gene lists from literature alone -> Use this for sub-clustering only, not downstream analysis (eg. DE)
 
 For option 1 or 2, the gene sets will broadly reflect your tissue's biology. For option 3, expect over-cleaning of disease-specific or tissue-specific genes that the reference doesn't capture.
 
