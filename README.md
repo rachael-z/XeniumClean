@@ -28,6 +28,12 @@ Then, for each cell `x` of type A in spatial data:
 
 The output is a new cleaned assay (`XeniumClean` by default) alongside the original counts.
 
+
+
+https://github.com/user-attachments/assets/7f6e1717-f7fd-4e60-bd42-b550543a8401
+
+
+
 ## Read before running:
 
 ### 1. Cell types must be pre-defined in both datasets
